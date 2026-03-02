@@ -1,0 +1,17 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# ============================
+# FastEdit – Open file directly in Nano
+# Usage: fastedit filename
+# ============================
+
+# Check if filename is given
+if [ -z "$1" ]; then
+    echo "Usage: fastedit filename"
+    exit 1
+fi
+
+# Install Nano if not present
+command -v nano >/dev/null 2>&1 || { echo "Nano not found, installing..."; pkg install -y nano; }
+
+# Open file in Nano
+nano "$1"
