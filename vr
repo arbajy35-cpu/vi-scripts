@@ -1,0 +1,30 @@
+#!/data/data/com.termux/files/usr/bin/bash
+
+ROOT="/storage/emulated/0/AppProjects"
+
+OLD="$1"
+NEW="$2"
+
+[ -z "$OLD" ] || [ -z "$NEW" ] && echo "Usage: vr oldname newname" && exit
+
+mapfile -t FILES < <(find "$ROOT" -type f -iname "$OLD" 2>/dev/null)
+
+COUNT=${#FILES[@]}
+
+[ "$COUNT" -eq 0 ] && echo "File not found" && exit
+
+if [ "$COUNT" -gt 1 ]; then
+    echo "Multiple files found:"
+    for i in "${!FILES[@]}"; do
+        echo "$((i+1))) ${FILES[$i]}"
+    done
+    read -p "Select number: " num
+    FILE="${FILES[$((num-1))]}"
+else
+    FILE="${FILES[0]}"
+fi
+
+DIR=$(dirname "$FILE")
+mv "$FILE" "$DIR/$NEW"
+
+echo "Renamed successfully"

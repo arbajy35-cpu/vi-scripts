@@ -1,0 +1,372 @@
+====================================================
+VI SYSTEM – COMPLETE INFORMATION FILE
+Author: BLACKWATCHER BL
+System Name: VI REAL ENGINE
+====================================================
+
+OVERVIEW
+----------------------------------------------------
+VI is a complete Android build, error detection,
+GitHub CI/CD, and project management system
+designed to work fully from Termux.
+
+It automates:
+
+• Project cleaning
+• Building APK using GitHub Actions
+• Detecting local errors
+• Detecting runtime errors
+• Fetching GitHub build logs
+• Showing root cause of failures
+• Managing files and folders
+• Monitoring Android app crashes
+
+
+====================================================
+CORE COMPONENTS
+====================================================
+
+
+1. vi-1 (MASTER ORCHESTRATOR)
+----------------------------------------------------
+Purpose:
+Main controller script.
+
+What it does:
+
+• Runs clean
+• Builds project
+• Checks local errors
+• Checks GitHub errors
+• Gives FINAL verdict
+
+Command:
+
+vi-1
+
+Output:
+
+BUILD SUCCESS
+or
+BUILD FAILED
+
+
+====================================================
+
+
+2. vi-build (BUILD ENGINE)
+----------------------------------------------------
+Purpose:
+Build APK using GitHub Actions automatically.
+
+What it does:
+
+• Cleans cache
+• Syncs with GitHub
+• Increments version
+• Pushes code
+• Waits for build
+• Downloads APK
+• Shows errors
+
+Command:
+
+vi-build
+
+Output:
+
+APK downloaded to:
+
+~/VI-Builds/
+
+
+====================================================
+
+
+3. error_vi.sh (GITHUB ERROR ANALYZER)
+----------------------------------------------------
+Purpose:
+Analyze GitHub build errors.
+
+What it does:
+
+• Downloads GitHub logs
+• Detects errors
+• Shows failed tasks
+• Shows root cause
+• Suggests fixes
+
+Command:
+
+error_vi.sh
+
+
+====================================================
+
+
+4. error_local.sh (LOCAL ERROR SCANNER)
+----------------------------------------------------
+Purpose:
+Detect syntax errors in local project.
+
+Checks:
+
+• Java
+• Kotlin
+• XML
+• HTML
+• CSS
+• JS
+
+Command:
+
+error_local.sh
+
+
+====================================================
+
+
+5. VI-Error (RUNTIME ERROR MONITOR)
+----------------------------------------------------
+Purpose:
+Monitor Android app crashes live.
+
+What it does:
+
+• Detects app open/close
+• Reads logcat
+• Detects crash
+• Shows runtime error
+
+Command:
+
+VI-Error com.package.name
+
+
+Example:
+
+VI-Error com.example.app
+
+
+====================================================
+
+
+6. vi-clean-all (FULL CLEANER)
+----------------------------------------------------
+Purpose:
+Clean project completely.
+
+What it does:
+
+• Deletes APKs
+• Deletes logs
+• Deletes build folders
+• Resets version
+
+Command:
+
+vi-clean-all
+
+
+====================================================
+
+
+7. vi-boost (CACHE CLEANER)
+----------------------------------------------------
+Purpose:
+Remove junk and speed up system.
+
+Removes:
+
+• build folders
+• gradle cache
+• temp files
+
+Command:
+
+vi-boost
+
+
+====================================================
+
+
+8. github_clear.sh (GITHUB CACHE CLEANER)
+----------------------------------------------------
+Purpose:
+Delete GitHub Actions cache.
+
+Command:
+
+github_clear.sh
+
+
+====================================================
+
+
+9. v (FILE OPENER)
+----------------------------------------------------
+Purpose:
+Find and open files quickly.
+
+Command:
+
+v filename
+
+
+====================================================
+
+
+10. vr (FILE RENAMER)
+----------------------------------------------------
+Purpose:
+Rename files.
+
+Command:
+
+vr oldname newname
+
+
+====================================================
+
+
+11. vx (PROJECT VIEWER)
+----------------------------------------------------
+Purpose:
+View project files.
+
+Command:
+
+vx projectname
+
+
+====================================================
+
+
+12. vi-ffinder (FOLDER STRUCTURE VIEWER)
+----------------------------------------------------
+Purpose:
+Show folder structure.
+
+Command:
+
+vi-ffinder
+
+
+====================================================
+
+
+13. vi-fclean (FILE CLEANER)
+----------------------------------------------------
+Purpose:
+Clear file content.
+
+Command:
+
+vi-fclean
+
+
+====================================================
+
+
+WORKFLOW
+====================================================
+
+Normal usage:
+
+Step 1:
+
+vi-clean-all
+
+
+Step 2:
+
+vi-build
+
+
+Step 3:
+
+vi-1
+
+
+Result:
+
+APK ready
+
+
+====================================================
+
+
+ERROR DETECTION FLOW
+====================================================
+
+Local errors:
+
+error_local.sh
+
+
+GitHub errors:
+
+error_vi.sh
+
+
+Runtime errors:
+
+VI-Error com.package.name
+
+
+====================================================
+
+
+APK OUTPUT LOCATION
+====================================================
+
+~/VI-Builds/
+
+
+====================================================
+
+
+REQUIREMENTS
+====================================================
+
+Required tools:
+
+• Termux
+• git
+• curl
+• jq
+• unzip
+• gradle
+
+
+Required account:
+
+• GitHub account
+• GitHub token
+
+
+====================================================
+
+
+SAFETY LEVEL
+====================================================
+
+SAFE
+
+Does not damage system.
+
+
+====================================================
+
+
+FINAL PURPOSE
+====================================================
+
+VI system allows building Android apps fully
+from phone using GitHub cloud build and
+advanced error detection.
+
+
+====================================================
+END OF FILE
+====================================================

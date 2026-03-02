@@ -1,0 +1,68 @@
+#!/bin/bash
+# 👑 VI-1 – MASTER ORCHESTRATOR
+# Runs ALL VI scripts in correct order and gives FINAL REAL verdict
+# Author: BLACKWATCHER BL
+
+set -e  # fail immediately on error
+
+BASE_DIR="$HOME/bin"
+LOG_DIR="$HOME/.vi_master_logs"
+STAMP=$(date +%Y%m%d_%H%M%S)
+FINAL_LOG="$LOG_DIR/vi-1-$STAMP.log"
+
+mkdir -p "$LOG_DIR"
+
+log() {
+  echo -e "[`date '+%H:%M:%S'`] $1" | tee -a "$FINAL_LOG"
+}
+
+fail() {
+  echo -e "\n❌ VI-1 FINAL VERDICT: BUILD FAILED" | tee -a "$FINAL_LOG"
+  echo "📄 Log: $FINAL_LOG"
+  exit 1
+}
+
+log "👑 VI-1 STARTED – MASTER CONTROL ONLINE"
+
+# -----------------------------
+# 1️⃣ CLEAN
+# -----------------------------
+log "🧹 STEP 1: CLEAN ALL"
+vi-clean-all >>"$FINAL_LOG" 2>&1 || fail
+
+# -----------------------------
+# 2️⃣ BUILD
+# -----------------------------
+log "🏗️ STEP 2: BUILD PROJECT"
+vi-build >>"$FINAL_LOG" 2>&1 || {
+  log "❌ BUILD FAILED – checking LOCAL compiler errors"
+  error_local.sh >>"$FINAL_LOG" 2>&1 || true
+  fail
+}
+
+# -----------------------------
+# 3️⃣ LOCAL ERROR CHECK
+# -----------------------------
+log "🔍 STEP 3: LOCAL ERROR SCAN"
+if ! error_local.sh >>"$FINAL_LOG" 2>&1; then
+  log "❌ LOCAL ERRORS FOUND"
+  fail
+fi
+
+# -----------------------------
+# 4️⃣ GITHUB CI ERROR CHECK
+# -----------------------------
+log "☁️ STEP 4: GITHUB CI VALIDATION"
+if ! error_vi.sh --fatal-only >>"$FINAL_LOG" 2>&1; then
+  log "❌ CI ERRORS FOUND"
+  fail
+fi
+
+# -----------------------------
+# ✅ FINAL SUCCESS
+# -----------------------------
+log "✅ ALL CHECKS PASSED"
+log "🎯 FINAL VERDICT: BUILD IS CLEAN & TRUSTED"
+
+echo -e "\n🟢 VI-1 STATUS: SUCCESS"
+echo "📄 Full log: $FINAL_LOG"

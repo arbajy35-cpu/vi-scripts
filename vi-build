@@ -1,0 +1,147 @@
+#!/bin/bash
+# 🚀 VI SAFE PUSH + SMART BUILD (FIXED & VERIFIED)
+# Phone = Editor | GitHub = Builder
+# Author: BLACKWATCHER BL
+
+# ---------- CONFIG ----------
+PROJECT_DIR="$HOME/AppProjects/VI"
+VERSION_FILE="$PROJECT_DIR/version.txt"
+OUTPUT_DIR="$HOME/VI-Builds"
+LOGS_DIR="$OUTPUT_DIR/build_logs"
+
+GITHUB_USER="arbajy35-cpu"
+REPO="VI"
+BRANCH="main"
+
+MAX_WAIT=600
+SLEEP_INTERVAL=10
+
+# ---------- TOKEN CHECK ----------
+if [[ -z "$GITHUB_TOKEN" ]]; then
+  echo "❌ GITHUB_TOKEN not found"
+  echo "👉 Run once: export GITHUB_TOKEN=ghp_xxxxx"
+  exit 1
+fi
+TOKEN="$GITHUB_TOKEN"
+
+mkdir -p "$OUTPUT_DIR" "$LOGS_DIR"
+
+log() { echo -e "[`date '+%H:%M:%S'`] $1"; }
+
+set -e
+trap 'log "❌ Interrupted"; exit 1' INT
+
+cd "$PROJECT_DIR" || { log "❌ Project not found"; exit 1; }
+
+# ---------- FIX GRADLE ----------
+log "🔧 Fixing gradle permissions..."
+chmod +x gradlew || true
+sed -i 's/\r$//' gradlew || true
+
+#---------- FORCE CLEAN + REFRESH ----------
+
+log "🧹 Cleaning old build cache + refreshing dependencies..."
+rm -rf "$PROJECT_DIR/app/build"
+rm -rf "$PROJECT_DIR/.gradle"
+chmod +x gradlew
+sed -i 's/\r$//' gradlew
+
+log "✅ Cache cleaned, Gradle ready for GitHub build"
+
+# ---------- SYNC ----------
+log "🔄 Syncing with GitHub..."
+git pull origin "$BRANCH" --rebase
+
+# ---------- VERSION ----------
+[[ ! -f "$VERSION_FILE" ]] && echo 0 > "$VERSION_FILE"
+v=$(cat "$VERSION_FILE")
+nv=$((v + 1))
+echo "$nv" > "$VERSION_FILE"
+
+# 🔥 FORCE TRIGGER FILE (BUG #1 FIX)
+echo "build $nv $(date)" > .vi_trigger
+
+log "📦 Version bumped → $nv"
+
+# ---------- COMMIT ----------
+log "📌 Committing..."
+git add .
+git commit -m "VI auto build v$nv" >/dev/null || {
+  log "⚠️ Commit failed (should not happen)"
+  exit 1
+}
+
+# ---------- PUSH ----------
+log "☁️ Pushing to GitHub..."
+git push origin "$BRANCH"
+
+# ---------- GET COMMIT SHA (BUG #2 FIX) ----------
+COMMIT_SHA=$(git rev-parse HEAD)
+log "🔗 Commit SHA → $COMMIT_SHA"
+log "🚀 Waiting for GitHub Actions..."
+
+# ---------- WAIT FOR BUILD ----------
+SECONDS_WAITED=0
+RUN_ID=""
+
+while [[ -z "$RUN_ID" ]]; do
+  RUN_ID=$(curl -s -H "Authorization: Bearer $TOKEN" \
+    "https://api.github.com/repos/$GITHUB_USER/$REPO/actions/runs?branch=$BRANCH" \
+    | jq -r ".workflow_runs[] | select(.head_sha==\"$COMMIT_SHA\") | .id" | head -n 1)
+
+  sleep 3
+  ((SECONDS_WAITED+=3))
+  [[ $SECONDS_WAITED -ge 60 ]] && { log "❌ Workflow not triggered"; exit 1; }
+done
+
+log "🧠 Workflow detected → Run ID $RUN_ID"
+
+# ---------- MONITOR STATUS (BUG #3 FIX) ----------
+SECONDS_WAITED=0
+while true; do
+  STATUS=$(curl -s -H "Authorization: Bearer $TOKEN" \
+    "https://api.github.com/repos/$GITHUB_USER/$REPO/actions/runs/$RUN_ID" \
+    | jq -r '.status')
+
+  CONCLUSION=$(curl -s -H "Authorization: Bearer $TOKEN" \
+    "https://api.github.com/repos/$GITHUB_USER/$REPO/actions/runs/$RUN_ID" \
+    | jq -r '.conclusion')
+
+  if [[ "$STATUS" == "completed" ]]; then
+    if [[ "$CONCLUSION" == "success" ]]; then
+      log "✅ Build SUCCESS"
+      ARTIFACT_URL=$(curl -s -H "Authorization: Bearer $TOKEN" \
+        "https://api.github.com/repos/$GITHUB_USER/$REPO/actions/runs/$RUN_ID/artifacts" \
+        | jq -r '.artifacts[0].archive_download_url')
+      break
+    else
+      log "❌ Build FAILED"
+      JOBS=$(curl -s -H "Authorization: Bearer $TOKEN" \
+        "https://api.github.com/repos/$GITHUB_USER/$REPO/actions/runs/$RUN_ID/jobs" \
+        | jq -r '.jobs[].id')
+      for J in $JOBS; do
+        curl -s -H "Authorization: Bearer $TOKEN" \
+          "https://api.github.com/repos/$GITHUB_USER/$REPO/actions/jobs/$J/logs" \
+          -o "$LOGS_DIR/job_$J.log"
+      done
+      exit 1
+    fi
+  fi
+
+  sleep $SLEEP_INTERVAL
+  ((SECONDS_WAITED+=SLEEP_INTERVAL))
+  [[ $SECONDS_WAITED -ge $MAX_WAIT ]] && { log "⏰ Timeout"; exit 1; }
+done
+
+# ---------- DOWNLOAD ----------
+ZIP="$OUTPUT_DIR/vi-artifact.zip"
+log "⬇️ Downloading APK..."
+curl -L -H "Authorization: Bearer $TOKEN" -o "$ZIP" "$ARTIFACT_URL"
+unzip -o "$ZIP" -d "$OUTPUT_DIR"
+rm "$ZIP"
+
+log "🎉 APK READY → $OUTPUT_DIR"
+
+# ---------- ERROR VIEW ----------
+log "🔍 Fetching latest GitHub Actions errors (if any)..."
+~/bin/error_vi.sh || true

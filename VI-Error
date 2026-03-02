@@ -1,0 +1,145 @@
+#!/data/data/com.termux/files/usr/bin/bash
+
+#########################################
+# VI-Error v4 PRO MAX
+# Advanced Runtime Error Monitor
+# Live Open / Close Detection
+# Live Crash Detection
+# Full Debug Info
+#########################################
+
+# ---------- COLOR ----------
+RED="\033[1;31m"
+GREEN="\033[1;32m"
+YELLOW="\033[1;33m"
+CYAN="\033[1;36m"
+BLUE="\033[1;34m"
+RESET="\033[0m"
+
+# ---------- SYSTEM PATH DETECT ----------
+LOGCAT="/system/bin/logcat"
+DUMPSYS="/system/bin/dumpsys"
+DATE="/system/bin/date"
+
+# ---------- CHECK SYSTEM ACCESS ----------
+if [ ! -x "$LOGCAT" ]; then
+    echo -e "${RED}[ERROR] logcat not accessible${RESET}"
+    exit 1
+fi
+
+if [ ! -x "$DUMPSYS" ]; then
+    echo -e "${RED}[ERROR] dumpsys not accessible${RESET}"
+    exit 1
+fi
+
+# ---------- PACKAGE ----------
+PACKAGE="$1"
+
+if [ -z "$PACKAGE" ]; then
+    echo ""
+    echo -e "${YELLOW}Usage:${RESET}"
+    echo "VI-Error com.package.name"
+    echo ""
+    exit 1
+fi
+
+# ---------- HEADER ----------
+echo ""
+echo -e "${CYAN}========================================${RESET}"
+echo -e "${CYAN}        VI-Error v4 PRO MAX${RESET}"
+echo -e "${CYAN}========================================${RESET}"
+echo -e "${GREEN}Target:${RESET} $PACKAGE"
+echo -e "${GREEN}Logcat:${RESET} OK"
+echo -e "${GREEN}Dumpsys:${RESET} OK"
+echo -e "${YELLOW}Monitoring started...${RESET}"
+echo ""
+
+# ---------- CLEAR LOG ----------
+$LOGCAT -c
+
+LAST_STATE="UNKNOWN"
+
+# ---------- LOOP ----------
+while true
+do
+
+TIME=$($DATE +"%H:%M:%S")
+
+CURRENT=$($DUMPSYS activity activities 2>/dev/null | grep mResumedActivity)
+
+# ---------- STATE CHECK ----------
+if echo "$CURRENT" | grep -q "$PACKAGE"
+then
+    STATE="OPEN"
+else
+    STATE="CLOSED"
+fi
+
+# ---------- OPEN DETECT ----------
+if [ "$STATE" = "OPEN" ] && [ "$LAST_STATE" != "OPEN" ]
+then
+    echo -e "${BLUE}[$TIME] APP OPENED${RESET}"
+fi
+
+# ---------- CLOSE DETECT ----------
+if [ "$STATE" = "CLOSED" ] && [ "$LAST_STATE" = "OPEN" ]
+then
+    echo -e "${YELLOW}[$TIME] APP CLOSED${RESET}"
+    echo -e "${CYAN}Scanning runtime errors...${RESET}"
+
+    ERRORS=$($LOGCAT -d 2>/dev/null | grep "$PACKAGE" | grep -Ei \
+    "Exception|Error|Crash|Permission|Denial|fatal|FATAL|ANR|Caused by")
+
+    if [ -z "$ERRORS" ]; then
+
+        echo -e "${GREEN}[$TIME] No runtime errors detected${RESET}"
+
+    else
+
+        echo -e "${RED}[$TIME] Runtime Errors Found:${RESET}"
+
+        echo "$ERRORS" | while read line
+        do
+
+            if echo "$line" | grep -qi "fatal"
+            then
+                echo -e "${RED}FATAL:${RESET} $line"
+
+            elif echo "$line" | grep -qi "permission"
+            then
+                echo -e "${YELLOW}PERMISSION:${RESET} $line"
+
+            elif echo "$line" | grep -qi "exception"
+            then
+                echo -e "${RED}EXCEPTION:${RESET} $line"
+
+            else
+                echo -e "${RED}ERROR:${RESET} $line"
+
+            fi
+
+        done
+
+    fi
+
+    echo ""
+
+    # clear log for next cycle
+    $LOGCAT -c
+
+fi
+
+# ---------- LIVE CRASH DETECT ----------
+LIVE_ERROR=$($LOGCAT -d 2>/dev/null | grep "$PACKAGE" | grep -Ei "fatal exception")
+
+if [ ! -z "$LIVE_ERROR" ]; then
+    echo -e "${RED}[$TIME] LIVE CRASH DETECTED${RESET}"
+    echo "$LIVE_ERROR"
+    $LOGCAT -c
+fi
+
+LAST_STATE="$STATE"
+
+sleep 1
+
+done

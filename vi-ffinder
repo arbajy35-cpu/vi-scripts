@@ -1,0 +1,92 @@
+#!/data/data/com.termux/files/usr/bin/bash
+
+# -----------------------------------------
+# VI-FFinder v4
+# -----------------------------------------
+
+# Install tree if missing
+if ! command -v tree &> /dev/null; then
+    echo "Installing tree..."
+    pkg install tree -y
+fi
+
+# Expand ~ automatically
+expand_path() {
+    echo "${1/#\~/$HOME}"
+}
+
+# ------------------------------
+# Recursive Modes
+# -r  → show all (including hidden)
+# -rv → recursive but NO hidden
+# ------------------------------
+
+if [[ "$1" == "-r" || "$1" == "-rv" ]]; then
+
+    read -p "Enter root folder path: " BASE
+    BASE=$(expand_path "$BASE")
+
+    if [ ! -d "$BASE" ]; then
+        echo "❌ Folder does not exist: $BASE"
+        exit 1
+    fi
+
+    echo ""
+
+    if [[ "$1" == "-r" ]]; then
+        echo "📂 Full recursive structure (with hidden files):"
+        tree -a "$BASE"
+    else
+        echo "📂 Full recursive structure (without hidden files):"
+        tree "$BASE"
+    fi
+
+    exit 0
+fi
+
+# ------------------------------
+# Normal Interactive Mode
+# ------------------------------
+
+read -p "Enter the root folder path: " BASE
+BASE=$(expand_path "$BASE")
+
+if [ ! -d "$BASE" ]; then
+    echo "❌ Folder does not exist: $BASE"
+    exit 1
+fi
+
+mapfile -t FOLDERS < <(find "$BASE" -mindepth 1 -maxdepth 1 -type d)
+
+if [ ${#FOLDERS[@]} -eq 0 ]; then
+    echo "No subfolders found in $BASE. Showing full folder structure."
+    tree "$BASE"
+    exit 0
+fi
+
+echo -e "\nSelect a folder to view structure:"
+for i in "${!FOLDERS[@]}"; do
+    NAME=$(basename "${FOLDERS[$i]}")
+    echo "$((i+1))) $NAME"
+done
+
+read -p "Enter number of folder to open: " SEL
+
+if ! [[ "$SEL" =~ ^[0-9]+$ ]] || \
+   [ "$SEL" -lt 1 ] || \
+   [ "$SEL" -gt ${#FOLDERS[@]} ]; then
+    echo "❌ Invalid selection."
+    exit 1
+fi
+
+CHOICE="${FOLDERS[$((SEL-1))]}"
+
+read -p "You selected '$(basename "$CHOICE")'. Show structure? (y/n): " CONFIRM
+
+if [[ "$CONFIRM" != [yY] ]]; then
+    echo "Cancelled."
+    exit 0
+fi
+
+echo -e "\n📂 Folder structure of $(basename "$CHOICE"):\n"
+tree "$CHOICE"

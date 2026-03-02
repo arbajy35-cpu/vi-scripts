@@ -1,0 +1,9 @@
+#!/data/data/com.termux/files/usr/bin/bash
+
+ROOT="/storage/emulated/0/AppProjects/$1"
+
+[ ! -d "$ROOT" ] && echo "Project not found" && exit
+
+cd "$ROOT"
+echo "Project: $1"
+ls

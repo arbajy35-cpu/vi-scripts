@@ -1,0 +1,51 @@
+#!/bin/bash
+# 🚀 VI CLEAN ALL SCRIPT
+# Command: vi-clean-all
+# Author: BLACKWATCHER BL
+
+# --- CONFIG ---
+PROJECT_DIR="/storage/emulated/0/AppProjects/VI"
+APK_OUTPUT_DIR="/storage/emulated/0/VI-Builds"
+LOG_DIR="$PROJECT_DIR/.vi_build_logs"
+TMP_DIR="$HOME/tmp_vi_errors"
+VERSION_FILE="$PROJECT_DIR/version.txt"
+
+# --- FUNCTIONS ---
+log() { echo -e "[`date '+%H:%M:%S'`] $1"; }
+notify() { command -v termux-notification &>/dev/null && termux-notification -t "VI Clean-All" -c "$1" -b 0xFF0000; }
+
+log "🧹 Starting FULL CLEAN for VI project..."
+
+# Remove old APKs
+if [ -d "$APK_OUTPUT_DIR" ]; then
+    rm -f "$APK_OUTPUT_DIR"/*.apk
+    log "✅ Old APKs removed"
+else
+    log "⚠️ APK folder not found"
+fi
+
+# Remove logs & temp files
+rm -rf "$LOG_DIR"/* "$TMP_DIR"/*
+log "✅ Logs & temp files cleared"
+
+# Clean Gradle build folders
+cd "$PROJECT_DIR" || { log "❌ Project folder not found!"; exit 1; }
+if [ -f "./gradlew" ]; then
+    ./gradlew clean --no-daemon
+    log "✅ Gradle build folders cleaned"
+else
+    log "⚠️ gradlew not found, skipping Gradle clean"
+fi
+
+# Remove all 'build' folders in project
+find "$PROJECT_DIR" -type d -name "build" -exec rm -rf {} +
+log "🗑️ All leftover build folders removed"
+
+# Reset version file
+if [ -f "$VERSION_FILE" ]; then
+    echo 0 > "$VERSION_FILE"
+    log "🔢 Version reset to 0"
+fi
+
+notify "🎯 VI FULL CLEAN COMPLETE!"
+log "🎯 FULL CLEAN DONE!"

@@ -1,0 +1,52 @@
+#!/data/data/com.termux/files/usr/bin/bash
+
+REPO="$HOME/AppProjects/VI"
+
+cd "$REPO" || {
+  echo "Repo folder nahi mila → $REPO"
+  exit 1
+}
+
+if [ -z "$1" ]; then
+  echo "Usage: vm <filename or relative path>"
+  exit 1
+fi
+
+TARGET="$1"
+
+# direct relative path exist karta hai
+if [ -f "$TARGET" ]; then
+  nano "$TARGET"
+  exit 0
+fi
+
+# same name wali sab files dhundo
+mapfile -t matches < <(find . -type f -name "$TARGET" 2>/dev/null)
+
+count=${#matches[@]}
+
+if [ "$count" -eq 0 ]; then
+  echo "Repo me file nahi mili → $TARGET"
+  exit 1
+fi
+
+if [ "$count" -eq 1 ]; then
+  nano "${matches[0]}"
+  exit 0
+fi
+
+echo "Multiple files mili:"
+for i in "${!matches[@]}"; do
+  echo "$((i+1))) ${matches[$i]}"
+done
+
+printf "Kaunsi open karni? number likh: "
+read choice
+
+index=$((choice-1))
+
+if [ -n "${matches[$index]}" ]; then
+  nano "${matches[$index]}"
+else
+  echo "Invalid choice"
+fi
