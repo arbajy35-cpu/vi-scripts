@@ -1,0 +1,10 @@
+#!/system/bin/sh
+
+TARGET="$1"
+
+if [ -z "$TARGET" ]; then
+  pwd
+else
+  cd "$TARGET" 2>/dev/null || echo "Directory not found"
+  pwd
+fi
